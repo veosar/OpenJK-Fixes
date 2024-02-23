@@ -1,0 +1,24 @@
+# Builder image
+FROM ubuntu:22.04 as builder
+
+# Install build tools and libraries
+RUN dpkg --add-architecture i386 &&\
+	apt-get -q update &&\
+	DEBIAN_FRONTEND="noninteractive" apt-get -q install -y -o Dpkg::Options::="--force-confnew" --no-install-recommends mingw-w64 mingw-w64-common mingw-w64-tools mingw-w64-x86-64-dev binutils-mingw-w64-x86-64 build-essential gcc-multilib g++-multilib cmake libjpeg-dev libjpeg-dev:i386 libpng-dev libpng-dev:i386 zlib1g-dev zlib1g-dev:i386 &&\
+	rm -rf /var/lib/apt/lists/* &&\
+	apt-get upgrade
+
+# Copy sources
+COPY . /usr/src/openjk
+
+# Build x86_64 windows, cross compiled arch
+RUN mkdir /usr/src/openjk/build.x86_64_win &&\
+	cd /usr/src/openjk/build.x86_64_win &&\
+	cmake -DCMAKE_TOOLCHAIN_FILE=/usr/src/openjk/cmake/Toolchains/x86_64-w64-mingw32.cmake -DCMAKE_INSTALL_PREFIX=/opt \
+		-DBuildMPCGame=OFF -DBuildMPEngine=OFF -DBuildMPUI=OFF -DBUildMPDed=OFF\
+		-DBuildSPEngine=OFF -DBuildSPGame=OFF -DBuildSPRdVanilla=OFF \
+		.. &&\
+	make &&\
+	make install
+
+ENTRYPOINT ["tail", "-f", "/dev/null"]
